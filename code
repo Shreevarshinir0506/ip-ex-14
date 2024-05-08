@@ -1,0 +1,100 @@
+client side:
+package javaapplication27;
+import d1.NewWebService_Service;
+import d1.NewWebService;
+
+public class JavaApplication27 {
+
+    public static void main(String[] args) {
+        // Define the ID value
+        String id = "1"; // Example ID value
+        
+        // Call the pro method with the defined ID
+        System.out.println(pro(id));
+    }
+
+    private static String pro(String id) {
+        // Instantiate the web service client
+        d1.NewWebService_Service service = new d1.NewWebService_Service();
+        d1.NewWebService port = service.getNewWebServicePort();
+        
+        // Call the pro method of the web service and return the result
+        return port.pro(id);
+    }
+}
+
+serverside
+package demo;
+
+import java.sql.*;
+import javax.jws.WebService;
+import javax.jws.WebMethod;
+import javax.jws.WebParam;
+
+/**
+ * This is a sample web service
+ */
+@WebService(serviceName = "NewWebService")
+public class NewWebService {
+
+    /**
+     * This is a sample web service operation
+     * @param txt
+     */
+    @WebMethod(operationName = "hello")
+    public String hello(@WebParam(name = "name") String txt) {
+        return "Hello " + txt + " !";
+    }
+
+    /**
+     * Web service operation to retrieve product information by name
+     * @param id
+     */
+    @WebMethod(operationName = "pro")
+    public String pro(@WebParam(name = "id") String id) {
+        Connection connection = null;
+        try {
+            // Connection to the database
+            connection = DriverManager.getConnection("jdbc:derby://localhost:1527/products");
+
+            // Parse ID string to integer
+            int productId = Integer.parseInt(id);
+
+            // PreparedStatement to execute the query
+            PreparedStatement stmt = connection.prepareStatement("SELECT discription FROM product WHERE id = ?");
+            stmt.setInt(1, productId);
+
+            // Execute the query and get the result set
+            ResultSet rs = stmt.executeQuery();
+
+            // Check if the product exists
+            if (rs.next()) {
+                // Retrieve the product description from the result set
+                String productDescription = rs.getString("discription");
+
+                // Close the result set and the statement
+                rs.close();
+                stmt.close();
+
+                // Return the product description
+                return productDescription;
+            } else {
+                // If the product does not exist, return "no data found"
+                return "no data found";
+            }
+        } catch (SQLException | NumberFormatException e) {
+            // Handle exceptions
+            e.printStackTrace();
+            return "An error occurred while processing the request";
+        } finally {
+            // Close the connection in a finally block to ensure it's always closed
+            if (connection != null) {
+                try {
+                    connection.close();
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+}
